@@ -1,3 +1,5 @@
 *.png
 *.html
 .*
+*.log
+*.csv
