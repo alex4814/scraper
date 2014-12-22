@@ -1,15 +1,22 @@
-import sys
+# coding: utf-8
+
+import sys, os
+import csv
+import codecs
 import urllib2
 from bs4 import BeautifulSoup
-from ghost import Ghost
 
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
 
-bid = 600112
-today = '12-14'
+bid = 601021
+today = '12-16'
 
-def process(link):
+def make_dir(fn):
+    if not os.path.exists(str(fn)):
+        os.mkdir(str(fn))
+
+def process(link, p_mark):
     # process topic content
     html = urllib2.urlopen(link).read()
     soup = BeautifulSoup(html, "lxml")
@@ -21,10 +28,12 @@ def process(link):
     p_body = soup.find(class_='zwcontentmain')
     p_title = p_body.find(id='zwconttbt').text.strip()
     p_content = p_body.find(id='zwconbody').text.strip()
-    print p_name, p_title, p_content
+
+    p_item = (p_mark if p_mark else '', p_name, p_datetime, p_title, p_content)
 
     # process each comment after topic
     url_topic = link[:-5] + "_%d.html"
+    rows = [p_item]
     page = 1
     while True:
         if page > 1:
@@ -38,8 +47,15 @@ def process(link):
             c_name = cmt.find(class_='zwlianame').text.strip()
             c_datetime = cmt.find(class_='zwlitime').text[4:].strip()
             c_content = cmt.find(class_='zwlitext').text.strip()
-            print '\t', c_name, c_datetime, c_content, '\n'
+
+            c_item = (c_name, c_datetime, c_content)
+            rows.append(c_item)
+            #print '\t', c_name, c_datetime, c_content, '\n'
         page += 1
+
+    writer = csv.writer(csvfile)
+    writer.writerows(rows)
+    writer.writerow([])
 
 def scrape():
     page = 1
@@ -66,12 +82,16 @@ def scrape():
 
             # process each topic and comments
             link = url_home + title.a['href']
-            process(link)
+            process(link, mark)
         page += 1
 
-#link = 'http://guba.eastmoney.com/news,600112,135768083.html';
-#process(link)
-#process('http://guba.eastmoney.com/news,600010,135749798.html')
 reload(sys)
 sys.setdefaultencoding('utf-8')
+# preparing file to store
+make_dir(bid)
+csvfile = file('./%d/%s.csv' % (bid, today), 'wb')
+csvfile.write(codecs.BOM_UTF8)
+# main
 scrape()
+# final
+csvfile.close()
