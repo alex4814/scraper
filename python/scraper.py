@@ -4,14 +4,12 @@ import sys, os
 import csv
 import codecs
 import urllib2
+import datetime
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
-
-bid = 601021
-today = '12-22'
 
 class Driver:
     def __init__(self):
@@ -25,12 +23,11 @@ class Driver:
     def quit(self):
         self.driver.quit()
 
-
 def make_dir(fn):
-    if not os.path.exists(str(fn)):
-        os.mkdir(str(fn))
+    if not os.path.exists(fn):
+        os.mkdir(fn)
 
-def process(link, p_mark):
+def process(link, p_mark, csvfile):
     # process topic content
     #html = urllib2.urlopen(link).read()
     html = a_driver.get_html(link)
@@ -82,7 +79,13 @@ def process(link, p_mark):
     writer.writerows(rows)
     writer.writerow([])
 
-def scrape():
+def scrape(bid, crawl_date):
+    # preparing to write
+    make_dir('data')
+    make_dir('data/' + str(bid))
+    csvfile = file('data/%d/%s.csv' % (bid, crawl_date), 'wb')
+    csvfile.write(codecs.BOM_UTF8)
+
     page = 1
     finish = False
     while (not finish):
@@ -92,6 +95,9 @@ def scrape():
         soup = BeautifulSoup(html_bar, "lxml")
 
         arts = soup("div", class_="articleh")
+        if len(arts) == 0:
+            break
+
         for topic in arts:
             date = topic.find("span", class_="l6").string
             title = topic.find("span", class_="l3")
@@ -102,26 +108,31 @@ def scrape():
                 continue
 
             # process only topics posted after a certain day
-            if date < today and not mark:
+            if date < crawl_date and not mark:
                 finish = True
                 break
 
             # process each topic and comments
             link = url_home + title.a['href']
-            process(link, mark)
+            process(link, mark, csvfile)
         page += 1
+        
+    csvfile.close()
 
-
+# pre-work
 reload(sys)
 sys.setdefaultencoding('utf-8')
-# preparing to write
-make_dir(bid)
-csvfile = file('./%d/%s.csv' % (bid, today), 'wb')
-csvfile.write(codecs.BOM_UTF8)
+
 # main
 a_driver = Driver()
-#process('http://guba.eastmoney.com/news,szzs,137444690.html', None)
-scrape()
+
+yesterday = datetime.date.today() - datetime.timedelta(days = 1)
+crawl_date = yesterday.strftime('%m-%d')
+
+for i in range(4000):
+    bid = i + 600000
+    scrape(bid, crawl_date)
+
 # final
 a_driver.quit()
-csvfile.close()
+
