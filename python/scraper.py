@@ -10,6 +10,10 @@ from selenium import webdriver
 
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
+header = {
+    'User-Agent': 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11',
+    'Accept-Charset': 'GBK,utf-8;q=0.7,*;q=0.3'
+}
 
 class Driver:
     def __init__(self):
@@ -90,16 +94,20 @@ def scrape(bid, crawl_date):
     finish = False
     while (not finish):
         url = url_bar % (bid, page)
+        print '\turl:', url
         html_bar = a_driver.get_html(url)
-        #html_bar = urllib2.urlopen(url).read()
+        #req = urllib2.Request(url, headers = header)
+        #html_bar = urllib2.urlopen(req).read()
+        #print html_bar
         soup = BeautifulSoup(html_bar, "lxml")
 
         arts = soup("div", class_="articleh")
+        print '\t%d articles found.' % len(arts)
         if len(arts) == 0:
             break
 
         for topic in arts:
-            date = topic.find("span", class_="l6").string
+            date = topic.find("span", class_="l6").text.strip()
             title = topic.find("span", class_="l3")
             mark = title.em.string if title.em else None
 
@@ -111,9 +119,12 @@ def scrape(bid, crawl_date):
             if date < crawl_date and not mark:
                 finish = True
                 break
+            if not date == crawl_date:
+                continue
 
             # process each topic and comments
             link = url_home + title.a['href']
+            print '\tproccessing topic:', date, title.text.strip()
             process(link, mark, csvfile)
         page += 1
         
@@ -129,9 +140,13 @@ a_driver = Driver()
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
+"""
 for i in range(4000):
     bid = i + 600000
+    print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
+"""
+scrape(600101, '12-25')
 
 # final
 a_driver.quit()
