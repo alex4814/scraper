@@ -39,7 +39,7 @@ def process(link, p_mark, csvfile):
 
     p_content = soup.find(id='zwcontent')
     if not p_content:
-        break
+        return
     p_info = soup.find(id='zwcontt')
     p_name = p_info.find(id='zwconttbn').strong.text.strip()
     p_datetime = p_info.find(class_='zwfbtime').text[4:] # erase leading chinese
@@ -90,7 +90,10 @@ def scrape(bid, crawl_date):
     # preparing to write
     make_dir('data')
     make_dir('data/' + str(bid))
-    csvfile = file('data/%d/%s.csv' % (bid, crawl_date), 'wb')
+    uri_file = 'data/%d/%s.csv' % (bid, crawl_date)
+    if os.path.exists(uri_file):
+        return
+    csvfile = file(uri_file, 'wb')
     csvfile.write(codecs.BOM_UTF8)
 
     page = 1
