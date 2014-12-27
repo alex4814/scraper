@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import sys, os
+import re
 import csv
 import codecs
 import urllib2
@@ -19,8 +20,8 @@ header = {
 class Driver:
     def __init__(self):
         self.driver = webdriver.PhantomJS()
-        self.driver.set_window_size(1024, 768)
         self.driver.implicitly_wait(5) # seconds
+        self.driver.set_window_size(1024, 768)
 
     def get_html(self, url):
         self.driver.get(url);
@@ -38,8 +39,8 @@ def process(link, p_mark, csvfile):
     #html = urllib2.urlopen(link).read()
     a_driver = Driver()
     html = a_driver.get_html(link)
-    time.sleep(0.4)
     soup = BeautifulSoup(html, "lxml")
+    time.sleep(0.4)
     a_driver.quit()
 
     p_content = soup.find(id='zwcontent')
@@ -62,17 +63,30 @@ def process(link, p_mark, csvfile):
     # process each comment after topic
     url_topic = link[:-5] + "_%d.html"
     rows = [p_item]
-    n = int(soup.find(class_='zwhpager').span.text.strip())
-    print '\ttotal %d pages of comments' % n
-    for page in range(1, n + 1):
+    """
+    pager = soup.find(class_='zwhpager')
+    n = 1
+    if pager.span:
+        n = pager.span.text.strip()
+        n = int(n)
+    """
+    #n = int(soup.find(class_='zwhpager').span.text.strip())
+    #print '\t\ttotal %d pages of comments' % n
+    page = 1
+    #for page in range(1, n + 1):
+    while (True):
         if page > 1:
             url = url_topic % (page)
             #html = urllib2.urlopen(url).read()
-            html = a_driver.get_html(url)
+            c_driver = Driver()
+            html = c_driver.get_html(url)
+            time.sleep(0.4)
             soup = BeautifulSoup(html, "lxml")
+            c_driver.quit()
         cmts = soup("div", class_="zwli")
         if len(cmts) == 0:
             break
+        print '\t\tdealing page %d' % page
         #print 'lens of comments', len(cmts)
         for cmt in cmts:
             c_name = cmt.find(class_='zwlianame').strong.text.strip()
@@ -87,6 +101,7 @@ def process(link, p_mark, csvfile):
             c_item = (c_name, c_datetime, c_text, c_zan)
             rows.append(c_item)
             #print '\t', c_name, c_datetime, c_content, '\n'
+        page += 1
 
     writer = csv.writer(csvfile)
     writer.writerows(rows)
@@ -106,7 +121,7 @@ def scrape(bid, crawl_date):
     finish = False
     while (not finish):
         url = url_bar % (bid, page)
-        print '\turl:', url
+        print 'url:', url
         a_driver = Driver()
         html_bar = a_driver.get_html(url)
 	time.sleep(0.4)
@@ -117,7 +132,7 @@ def scrape(bid, crawl_date):
         a_driver.quit()
 
         arts = soup("div", class_="articleh")
-        print '\t%d articles found.' % len(arts)
+        print '%d articles found.' % len(arts)
         if len(arts) == 0:
             break
 
