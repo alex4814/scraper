@@ -19,7 +19,8 @@ header = {
 class Driver:
     def __init__(self):
         self.driver = webdriver.PhantomJS()
-        #self.driver.set_window_size(1024, 768)
+        self.driver.set_window_size(1024, 768)
+        self.driver.implicitly_wait(5) # seconds
 
     def get_html(self, url):
         self.driver.get(url);
@@ -37,7 +38,7 @@ def process(link, p_mark, csvfile):
     #html = urllib2.urlopen(link).read()
     a_driver = Driver()
     html = a_driver.get_html(link)
-    time.sleep(random.randint(1, 3))
+    time.sleep(0.4)
     soup = BeautifulSoup(html, "lxml")
     a_driver.quit()
 
@@ -62,6 +63,7 @@ def process(link, p_mark, csvfile):
     url_topic = link[:-5] + "_%d.html"
     rows = [p_item]
     n = int(soup.find(class_='zwhpager').span.text.strip())
+    print '\ttotal %d pages of comments' % n
     for page in range(1, n + 1):
         if page > 1:
             url = url_topic % (page)
@@ -107,7 +109,7 @@ def scrape(bid, crawl_date):
         print '\turl:', url
         a_driver = Driver()
         html_bar = a_driver.get_html(url)
-	time.sleep(random.randint(1, 3))
+	time.sleep(0.4)
         #req = urllib2.Request(url, headers = header)
         #html_bar = urllib2.urlopen(req).read()
         #print html_bar
