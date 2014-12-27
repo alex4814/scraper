@@ -4,7 +4,8 @@ import sys, os
 import csv
 import codecs
 import urllib2
-import datetime
+import time, datetime
+import random
 from bs4 import BeautifulSoup
 from selenium import webdriver
 
@@ -18,7 +19,7 @@ header = {
 class Driver:
     def __init__(self):
         self.driver = webdriver.PhantomJS()
-        self.driver.set_window_size(1024, 768)
+        #self.driver.set_window_size(1024, 768)
 
     def get_html(self, url):
         self.driver.get(url);
@@ -34,8 +35,11 @@ def make_dir(fn):
 def process(link, p_mark, csvfile):
     # process topic content
     #html = urllib2.urlopen(link).read()
+    a_driver = Driver()
     html = a_driver.get_html(link)
+    time.sleep(random.randint(1, 3))
     soup = BeautifulSoup(html, "lxml")
+    a_driver.quit()
 
     p_content = soup.find(id='zwcontent')
     if not p_content:
@@ -101,11 +105,14 @@ def scrape(bid, crawl_date):
     while (not finish):
         url = url_bar % (bid, page)
         print '\turl:', url
+        a_driver = Driver()
         html_bar = a_driver.get_html(url)
+	time.sleep(random.randint(1, 3))
         #req = urllib2.Request(url, headers = header)
         #html_bar = urllib2.urlopen(req).read()
         #print html_bar
         soup = BeautifulSoup(html_bar, "lxml")
+        a_driver.quit()
 
         arts = soup("div", class_="articleh")
         print '\t%d articles found.' % len(arts)
@@ -132,6 +139,7 @@ def scrape(bid, crawl_date):
             link = url_home + title.a['href']
             print '\tproccessing topic:', date, title.text.strip()
             process(link, mark, csvfile)
+
         page += 1
         
     csvfile.close()
@@ -141,8 +149,6 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 # main
-a_driver = Driver()
-
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
