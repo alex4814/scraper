@@ -37,6 +37,9 @@ def process(link, p_mark, csvfile):
     html = a_driver.get_html(link)
     soup = BeautifulSoup(html, "lxml")
 
+    p_content = soup.find(id='zwcontent')
+    if not p_content:
+        break
     p_info = soup.find(id='zwcontt')
     p_name = p_info.find(id='zwconttbn').strong.text.strip()
     p_datetime = p_info.find(class_='zwfbtime').text[4:] # erase leading chinese
@@ -71,9 +74,9 @@ def process(link, p_mark, csvfile):
             c_content = cmt.find(class_='zwlitext')
             c_text = c_content.text.strip()
             for img in c_content.find_all('img'):
-                c_text = c_text + '|' + img['title'].strip()
+                c_text = c_text + '[' + img['title'].strip() + ']'
             czan = cmt.find(class_='replylikelink')
-            c_zan = czan.span.text.strip() if czan.span else str(0)
+            c_zan = czan.span.text.strip() if czan and czan.span else str(0)
 
             c_item = (c_name, c_datetime, c_text, c_zan)
             rows.append(c_item)
@@ -140,13 +143,11 @@ a_driver = Driver()
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
-"""
 for i in range(4000):
     bid = i + 600000
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
-"""
-scrape(600101, '12-25')
+#scrape(600101, '12-25')
 
 # final
 a_driver.quit()
