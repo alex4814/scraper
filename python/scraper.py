@@ -19,13 +19,18 @@ header = {
 
 class Driver:
     def __init__(self):
-        self.driver = webdriver.PhantomJS()
-        self.driver.implicitly_wait(5) # seconds
+        self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         self.driver.set_window_size(1024, 768)
 
     def get_html(self, url):
         self.driver.get(url);
         return self.driver.page_source
+    
+    def explicitly_wait(self):
+        pass
+
+    def implicitly_wait(self, sec):
+        pass
 
     def quit(self):
         self.driver.quit()
@@ -34,13 +39,17 @@ def make_dir(fn):
     if not os.path.exists(fn):
         os.mkdir(fn)
 
+def get_soup(url):
+    pass
+
 def process(link, p_mark, csvfile):
     # process topic content
     #html = urllib2.urlopen(link).read()
+   
     a_driver = Driver()
     html = a_driver.get_html(link)
     soup = BeautifulSoup(html, "lxml")
-    time.sleep(0.4)
+    time.sleep(1)
     a_driver.quit()
 
     p_content = soup.find(id='zwcontent')
@@ -80,7 +89,7 @@ def process(link, p_mark, csvfile):
             #html = urllib2.urlopen(url).read()
             c_driver = Driver()
             html = c_driver.get_html(url)
-            time.sleep(0.4)
+            time.sleep(1)
             soup = BeautifulSoup(html, "lxml")
             c_driver.quit()
         cmts = soup("div", class_="zwli")
@@ -109,7 +118,7 @@ def process(link, p_mark, csvfile):
 
 def scrape(bid, crawl_date):
     # preparing to write
-    make_dir('data')
+    make_dir('data/')
     make_dir('data/' + str(bid))
     uri_file = 'data/%d/%s.csv' % (bid, crawl_date)
     if os.path.exists(uri_file):
@@ -124,7 +133,7 @@ def scrape(bid, crawl_date):
         print 'url:', url
         a_driver = Driver()
         html_bar = a_driver.get_html(url)
-	time.sleep(0.4)
+	time.sleep(1)
         #req = urllib2.Request(url, headers = header)
         #html_bar = urllib2.urlopen(req).read()
         #print html_bar
@@ -174,7 +183,4 @@ for i in range(4000):
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
 #scrape(600101, '12-25')
-
-# final
-a_driver.quit()
 
