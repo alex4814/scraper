@@ -13,7 +13,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-MAX_ATTEMPTS = 3
+MAX_ATTEMPTS = 5
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
 header = {
@@ -30,13 +30,17 @@ def get_html(url):
     html = None
     while cnt < MAX_ATTEMPTS and not html:
         p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
-        p.get(url)
         try:
+            p.get(url)
             element = WebDriverWait(p, 10).until(EC.presence_of_element_located((By.ID, "mainbody")));
         except:
+            print 'Error: exception found when getting url:', url
             cnt += 1
             continue
-        html = p.page_source
+        else:
+            html = p.page_source
+        finally:
+            p.quit()
     return html
 
 def process(link, p_mark, csvfile):
@@ -73,9 +77,9 @@ def process(link, p_mark, csvfile):
     if pager.span:
         n = pager.span.text.strip()
         n = int(n)
-    """
     #n = int(soup.find(class_='zwhpager').span.text.strip())
     #print '\t\ttotal %d pages of comments' % n
+    """
     page = 1
     #for page in range(1, n + 1):
     while (True):
