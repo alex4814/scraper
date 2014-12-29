@@ -9,7 +9,11 @@ import time, datetime
 import random
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
+MAX_ATTEMPTS = 3
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
 header = {
@@ -17,40 +21,31 @@ header = {
     'Accept-Charset': 'GBK,utf-8;q=0.7,*;q=0.3'
 }
 
-class Driver:
-    def __init__(self):
-        self.driver = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
-        self.driver.set_window_size(1024, 768)
-
-    def get_html(self, url):
-        self.driver.get(url);
-        return self.driver.page_source
-    
-    def explicitly_wait(self):
-        pass
-
-    def implicitly_wait(self, sec):
-        pass
-
-    def quit(self):
-        self.driver.quit()
-
 def make_dir(fn):
     if not os.path.exists(fn):
         os.mkdir(fn)
 
-def get_soup(url):
-    pass
+def get_html(url):
+    cnt = 0
+    html = None
+    while cnt < MAX_ATTEMPTS and not html:
+        p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+        p.get(url)
+        try:
+            element = WebDriverWait(p, 10).until(EC.presence_of_element_located((By.ID, "mainbody")));
+        except:
+            cnt += 1
+            continue
+        html = p.page_source
+    return html
 
 def process(link, p_mark, csvfile):
     # process topic content
-    #html = urllib2.urlopen(link).read()
-   
-    a_driver = Driver()
-    html = a_driver.get_html(link)
+    html = get_html(link)
+    if html == None:
+        print "Error: can't access comment url:", link
+        return
     soup = BeautifulSoup(html, "lxml")
-    time.sleep(1)
-    a_driver.quit()
 
     p_content = soup.find(id='zwcontent')
     if not p_content:
@@ -86,12 +81,10 @@ def process(link, p_mark, csvfile):
     while (True):
         if page > 1:
             url = url_topic % (page)
-            #html = urllib2.urlopen(url).read()
-            c_driver = Driver()
-            html = c_driver.get_html(url)
-            time.sleep(1)
-            soup = BeautifulSoup(html, "lxml")
-            c_driver.quit()
+            html = get_html(url)
+        if html == None:
+            break
+        soup = BeautifulSoup(html, "lxml")
         cmts = soup("div", class_="zwli")
         if len(cmts) == 0:
             break
@@ -131,15 +124,14 @@ def scrape(bid, crawl_date):
     while (not finish):
         url = url_bar % (bid, page)
         print 'url:', url
-        a_driver = Driver()
-        html_bar = a_driver.get_html(url)
-	time.sleep(1)
-        #req = urllib2.Request(url, headers = header)
-        #html_bar = urllib2.urlopen(req).read()
-        #print html_bar
-        soup = BeautifulSoup(html_bar, "lxml")
-        a_driver.quit()
 
+        html = get_html(url)
+        if html == None:
+            print "Error: can't access url:", url
+            page += 1
+            continue
+        
+        soup = BeautifulSoup(html, "lxml")
         arts = soup("div", class_="articleh")
         print '%d articles found.' % len(arts)
         if len(arts) == 0:
@@ -182,5 +174,5 @@ for i in range(4000):
     bid = i + 600000
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
-#scrape(600101, '12-25')
+#scrape(600101, '12-29')
 
