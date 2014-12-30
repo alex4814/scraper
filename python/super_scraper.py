@@ -8,12 +8,16 @@ import urllib2
 import time, datetime
 import random
 from bs4 import BeautifulSoup
+from Queue import Queue
+from threading import Thread
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 MAX_ATTEMPTS = 5
+MAX_THREADS = 4
+MAX_JOBS = 4000
 
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
@@ -22,6 +26,9 @@ header = {
     'Accept-Charset': 'GBK,utf-8;q=0.7,*;q=0.3'
 }
 rule = re.compile(r'[^0-9 :-]')
+
+yesterday = datetime.date.today() - datetime.timedelta(days = 90)
+crawl_date = yesterday.strftime('%m-%d')
 
 def make_dir(fn):
     if not os.path.exists(fn):
@@ -121,7 +128,7 @@ def process(link, p_mark, csvfile):
     writer.writerows(rows)
     writer.writerow([])
 
-def scrape(bid, crawl_date):
+def scrape(bid):
     # preparing to write
     make_dir('data/')
     make_dir('data/' + str(bid))
@@ -130,7 +137,7 @@ def scrape(bid, crawl_date):
     finish = False
     while (not finish):
         url = url_bar % (bid, page)
-        print 'url:', url
+        print 'craling url:', url
 
         html = get_html(url)
         if html == None:
@@ -158,9 +165,9 @@ def scrape(bid, crawl_date):
                 finish = True
                 break
 
-	    uri_file = 'data/%d/%s.csv' % (bid, date)
-	    csvfile = file(uri_file, 'ab')
-	    csvfile.write(codecs.BOM_UTF8)
+            uri_file = 'data/%d/%s.csv' % (bid, date)
+            csvfile = file(uri_file, 'ab')
+            csvfile.write(codecs.BOM_UTF8)
 
             # process each topic and comments
             link = url_home + title.a['href']
@@ -171,18 +178,29 @@ def scrape(bid, crawl_date):
 
         page += 1
         
+def working():
+    while True:
+        arg = q.get()
+        scrape(arg)
+        time.sleep(1)
+        q.task_done()
+
 
 # pre-work
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 # main
-yesterday = datetime.date.today() - datetime.timedelta(days = 90)
-crawl_date = yesterday.strftime('%m-%d')
+q = Queue()
+for i in range(MAX_THREADS):
+    t = Thread(target = working)
+    t.setDaemon(True)
+    t.start()
 
-for i in range(4000):
+for i in range(MAX_JOBS):
     bid = i + 600000
-    print 'crawling:', str(bid), crawl_date
-    scrape(bid, crawl_date)
+    q.put(bid)
+
+q.join()
 #scrape(600101, '12-29')
 
