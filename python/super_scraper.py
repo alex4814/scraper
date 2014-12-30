@@ -14,7 +14,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 MAX_ATTEMPTS = 5
-MAX_DAYS = 90
 
 url_home = 'http://guba.eastmoney.com/'
 url_bar = url_home + 'list,%d,f_%d.html'
@@ -22,6 +21,7 @@ header = {
     'User-Agent': 'Mozilla/5.0 (X11; U; Linux i686) Gecko/20071127 Firefox/2.0.0.11',
     'Accept-Charset': 'GBK,utf-8;q=0.7,*;q=0.3'
 }
+rule = re.compile(r'[^0-9 :-]')
 
 def make_dir(fn):
     if not os.path.exists(fn):
@@ -33,12 +33,15 @@ def get_html(url):
     while cnt < MAX_ATTEMPTS and not html:
         p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         try:
+            p.implicitly_wait(10)
             p.get(url)
-            element = WebDriverWait(p, 10).until(EC.presence_of_element_located((By.ID, "mainbody")));
+            print '-- WAITING FOR HTML --'
+            element = p.find_element_by_id("mainbody");
+            #element = WebDriverWait(p, 10).until(EC.presence_of_element_located((By.ID, "mainbody")));
+            print '-- HTML FULLY LOADED --'
         except:
             print 'Error: exception found when getting url:', url
             cnt += 1
-            continue
         else:
             html = p.page_source
         finally:
@@ -58,7 +61,9 @@ def process(link, p_mark, csvfile):
         return
     p_info = soup.find(id='zwcontt')
     p_name = p_info.find(id='zwconttbn').strong.text.strip()
-    p_datetime = p_info.find(class_='zwfbtime').text[4:] # erase leading chinese
+    #p_datetime = p_info.find(class_='zwfbtime').text[4:] # erase leading chinese
+    p_datetime = p_info.find(class_='zwfbtime').text.strip()
+    p_datetime = rule.sub('', p_datetime)
 
     p_body = soup.find(class_='zwcontentmain')
     p_title = p_body.find(id='zwconttbt').text.strip()
@@ -68,7 +73,7 @@ def process(link, p_mark, csvfile):
     zan = p_body.find(id='zwpraise')
     p_zan = zan.span.text.strip() if zan.span else str(0)
 
-    p_item = (p_mark if p_mark else '', p_name, p_datetime, p_title, p_content, p_zf, p_zan)
+    p_item = (p_mark, p_name, p_datetime, p_title, p_content, p_zf, p_zan)
 
     # process each comment after topic
     url_topic = link[:-5] + "_%d.html"
@@ -98,7 +103,8 @@ def process(link, p_mark, csvfile):
         #print 'lens of comments', len(cmts)
         for cmt in cmts:
             c_name = cmt.find(class_='zwlianame').strong.text.strip()
-            c_datetime = cmt.find(class_='zwlitime').text[4:].strip()
+            c_datetime = cmt.find(class_='zwlitime').text.strip()
+            c_datetime = rule.sub('', c_datetime)
             c_content = cmt.find(class_='zwlitext')
             c_text = c_content.text.strip()
             for img in c_content.find_all('img'):
@@ -119,13 +125,6 @@ def scrape(bid, crawl_date):
     # preparing to write
     make_dir('data/')
     make_dir('data/' + str(bid))
-    uri_file = 'data/%d/%s.csv' % (bid, crawl_date)
-
-    #if os.path.exists(uri_file):
-    #    return
-
-    csvfile = file(uri_file, 'ab')
-    csvfile.write(codecs.BOM_UTF8)
 
     page = 1
     finish = False
@@ -158,32 +157,32 @@ def scrape(bid, crawl_date):
             if date < crawl_date and not mark:
                 finish = True
                 break
-            """
-            if not date == crawl_date:
-                continue
-            """
+
+	    uri_file = 'data/%d/%s.csv' % (bid, date)
+	    csvfile = file(uri_file, 'ab')
+	    csvfile.write(codecs.BOM_UTF8)
+
             # process each topic and comments
             link = url_home + title.a['href']
             print '\tproccessing topic:', date, title.text.strip()
             process(link, mark, csvfile)
+    	    
+            csvfile.close()
 
         page += 1
         
-    csvfile.close()
 
 # pre-work
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
 # main
+yesterday = datetime.date.today() - datetime.timedelta(days = 90)
+crawl_date = yesterday.strftime('%m-%d')
+
 for i in range(4000):
     bid = i + 600000
-
-    # date
-    yesterday = datetime.date.today() - datetime.timedelta(days = MAX_DAYS)
-    crawl_date = yesterday.strftime('%m-%d')
-    print 'crawling:', str(bid), 'after date:', crawl_date
-
+    print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
 #scrape(600101, '12-29')
 
