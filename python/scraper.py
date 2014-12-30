@@ -33,11 +33,12 @@ def get_html(url):
         p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         try:
             p.get(url)
+            print '-- WAITING FOR HTML --'
             element = WebDriverWait(p, 10).until(EC.presence_of_element_located((By.ID, "mainbody")));
+            print '-- HTML FULLY LOADED --'
         except:
             print 'Error: exception found when getting url:', url
             cnt += 1
-            continue
         else:
             html = p.page_source
         finally:
