@@ -178,11 +178,9 @@ sys.setdefaultencoding('utf-8')
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
-"""
 for i in range(4000):
     bid = i + 600000
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
-    """
-scrape(600101, '12-29')
+#scrape(600101, '12-29')
 
