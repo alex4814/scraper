@@ -31,8 +31,8 @@ def get_html(url):
     cnt = 0
     html = None
     while cnt < MAX_ATTEMPTS and not html:
-        p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
         try:
+            p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
             p.implicitly_wait(10)
             p.get(url)
             print '-- WAITING FOR HTML --'
@@ -182,7 +182,7 @@ sys.setdefaultencoding('utf-8')
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
-for i in range(4000):
+for i in range(100):
     bid = i + 600000
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
