@@ -45,7 +45,8 @@ def get_html(url):
         else:
             html = p.page_source
         finally:
-            p.quit()
+            if p:
+                p.quit()
     return html
 
 def process(link, p_mark, csvfile):
@@ -61,9 +62,8 @@ def process(link, p_mark, csvfile):
         return
     p_info = soup.find(id='zwcontt')
     p_name = p_info.find(id='zwconttbn').strong.text.strip()
-    #p_datetime = p_info.find(class_='zwfbtime').text[4:] # erase leading chinese
-    p_datetime = p_info.find(class_='zwfbtime').text.strip()
-    p_datetime = rule.sub('', p_datetime)
+    p_datetime = p_info.find(class_='zwfbtime').text
+    p_datetime = rule.sub('', p_datetime).strip()
 
     p_body = soup.find(class_='zwcontentmain')
     p_title = p_body.find(id='zwconttbt').text.strip()
@@ -78,17 +78,8 @@ def process(link, p_mark, csvfile):
     # process each comment after topic
     url_topic = link[:-5] + "_%d.html"
     rows = [p_item]
-    """
-    pager = soup.find(class_='zwhpager')
-    n = 1
-    if pager.span:
-        n = pager.span.text.strip()
-        n = int(n)
-    #n = int(soup.find(class_='zwhpager').span.text.strip())
-    #print '\t\ttotal %d pages of comments' % n
-    """
+
     page = 1
-    #for page in range(1, n + 1):
     while (True):
         if page > 1:
             url = url_topic % (page)
@@ -100,7 +91,6 @@ def process(link, p_mark, csvfile):
         if len(cmts) == 0:
             break
         print '\t\tdealing page %d' % page
-        #print 'lens of comments', len(cmts)
         for cmt in cmts:
             c_name = cmt.find(class_='zwlianame').strong.text.strip()
             c_datetime = cmt.find(class_='zwlitime').text.strip()
@@ -114,7 +104,6 @@ def process(link, p_mark, csvfile):
 
             c_item = (c_name, c_datetime, c_text, c_zan)
             rows.append(c_item)
-            #print '\t', c_name, c_datetime, c_content, '\n'
         page += 1
 
     writer = csv.writer(csvfile)
@@ -157,7 +146,6 @@ def scrape(bid, crawl_date):
             # eliminate top topics
             if mark and 'settop' in title.em['class']:
                 continue
-
             # process only topics posted after a certain day
             if date < crawl_date and not mark:
                 finish = True
@@ -182,7 +170,7 @@ sys.setdefaultencoding('utf-8')
 yesterday = datetime.date.today() - datetime.timedelta(days = 1)
 crawl_date = yesterday.strftime('%m-%d')
 
-for i in range(100):
+for i in range(500):
     bid = i + 600000
     print 'crawling:', str(bid), crawl_date
     scrape(bid, crawl_date)
