@@ -31,8 +31,14 @@ def get_html(url):
     cnt = 0
     html = None
     while cnt < MAX_ATTEMPTS and not html:
+        p = None
         try:
             p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+        except:
+            print 'webdriver init error'
+        if p is None:
+            continue
+        try:
             p.implicitly_wait(10)
             p.get(url)
             print '-- WAITING FOR HTML --'
@@ -45,8 +51,7 @@ def get_html(url):
         else:
             html = p.page_source
         finally:
-            if p:
-                p.quit()
+            p.quit()
     return html
 
 def process(link, p_mark, csvfile):
