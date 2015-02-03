@@ -25,8 +25,10 @@ re_td = re.compile(r'[^0-9 :-]') # matching only datetime format
 def get_post_date(url):
   response = requests.get(url)
   soup = BeautifulSoup(response.text, 'lxml')
-  post_date_time = soup.find(class_='zwfbtime').text
-  post_date_time = re_td.sub('', post_date_time).strip()
+  post_date_time = soup.find(class_='zwfbtime')
+  if post_date_time is None:
+    return 
+  post_date_time = re_td.sub('', post_date_time.text).strip()
   # first 10 chars represent date, ignoring the time
   return post_date_time[:10] 
 
@@ -56,7 +58,7 @@ def record_valid_posts(id_bar, date_begin, date_end):
       title = post.find(class_='l3')
       link = ''.join( [url_home, title.a['href']] )
       post_date = get_post_date(link)
-      if post_date >= date_end:
+      if post_date is None or post_date >= date_end:
         continue
       if post_date < date_begin and not title.em:
         finished = True
