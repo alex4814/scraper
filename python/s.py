@@ -7,9 +7,9 @@ from threading import Thread
 from Queue import Queue
 from bs4 import BeautifulSoup
 
+## encoding setting ##
 reload(sys)
 sys.setdefaultencoding('utf-8')
-
 
 ## constants ##
 MAX_THREADS = 4
