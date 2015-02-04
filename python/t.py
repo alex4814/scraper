@@ -22,6 +22,7 @@ MAX_ATTEMPTS = 3
 url_home = 'http://guba.eastmoney.com/'
 url_bar = 'http://guba.eastmoney.com/list,%s,f_%d.html'
 HOME = 'contents'
+DATA = 'data'
 
 # regular expression rules
 re_dt = re.compile(r'[^0-9 :-]') # matching only datetime format
@@ -143,7 +144,7 @@ def extract_comments(link, cnt):
     p.quit()
 
 def write_post_and_comments_to_file(id_bar, date, items):
-  dir_dest = '%s/%s' % (HOME, id_bar)
+  dir_dest = '%s/%s' % (DATA, id_bar)
   create_directory(dir_dest)
   file_dest = '%s/%s.csv' % (dir_dest, date)
   with open(file_dest, 'ab') as csvfile:
@@ -217,7 +218,9 @@ def extract_and_record(id_bar):
           cnt = cnt - 1
 
 ## main logic ##
-    """
+create_directory('%s/' % DATA)
+
+"""
 def worker():
   while True:
     item = q.get()
@@ -235,7 +238,7 @@ for i in range(500):
   q.put(item)
 
 q.join()
-  """
+"""
 
 ## function process testing ##
 """
