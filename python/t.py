@@ -45,7 +45,7 @@ def extract_post(pst):
     s1 = p_inf.span
     star = s1['class'][1]
     s2 = s1.find_next_sibling('span')
-    year = s2.text 
+    year = s2.text if s2 else '0'
   item.append(star) # stars, stars45 means 4.5 of 5 stars
   item.append(year) # years active in this bar
 
@@ -87,7 +87,7 @@ def extract_comment(cmt):
     s1 = c_inf.span
     star = s1['class'][1]
     s2 = s1.find_next_sibling('span')
-    year = s2.text 
+    year = s2.text if s2 else '0'
   item.append(star) # stars, stars45 means 4.5 of 5 stars
   item.append(year) # years active in this bar
 
@@ -114,7 +114,7 @@ def extract_comment(cmt):
 def extract_comments(link, cnt):
   if cnt == 0:
     return
-  p = webdriver.PhantomJS(executable_path='/usr/local/bin/phantomjs')
+  p = webdriver.PhantomJS()
   p.get(link)
   print 'accessing comment link:', link
   time.sleep(0.2) # let the page load
@@ -129,8 +129,11 @@ def extract_comments(link, cnt):
       print 'no comments found on this page:', link
       return items
     for c in comments:
-      t_comment = extract_comment(c)
-      items.append(t_comment)
+      try:
+        t_comment = extract_comment(c)
+        items.append(t_comment)
+      except Exception as e:
+        print e
     return items
   except Exception as e:
     print e
@@ -158,6 +161,7 @@ def extract(link, html):
   t_post = extract_post(zwcontent)
   date = t_post[4].split(' ')[0] # post date as the file name
   items.append(t_post) # post content inserted to the list
+  print 'post extraction succeeded'
 
   # comment information below that post
   n_page = soup.find(class_='zwhpager').span.text
@@ -166,6 +170,7 @@ def extract(link, html):
   for i in range(int(n_page)):
     url = url_comment % (i + 1)
     comments = extract_comments(url, MAX_ATTEMPTS)
+    print 'comments extraction in page %d succeeded' % (i + 1)
     items = items + comments
 
   # write post and comments to file
@@ -233,10 +238,11 @@ q.join()
   """
 
 ## function process testing ##
-#"""
-l = 'guba.eastmoney.com/news,szzs,141515442.html'
+"""
+l = 'http://guba.eastmoney.com/news,szzs,141515442.html'
+l2 = 'http://guba.eastmoney.com/news,600001,136130294.html'
 process(l, MAX_ATTEMPTS)
-#"""
+"""
 
 ## function extract_and_record testing ##
-#extract_and_record(600001)
+extract_and_record(600001)
