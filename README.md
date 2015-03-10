@@ -1,13 +1,8 @@
-# javascript version
-## Dependencies
-PhantomJS
-CasperJS
+# Denpendencies
 
-# java version
-## Dependencies
-HTMLUnit
-Jsoup
+## Selenium
+pip install selenium
+## BeautifulSoup
+pip install beautifulsoup4
+## PhantomJS
 
-# python version
-## Dependencies
-BeautifulSoup
